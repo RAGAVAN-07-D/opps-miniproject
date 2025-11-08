@@ -1,0 +1,194 @@
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MAIN extends JFrame {
+
+    // === Data Models ===
+    class Post {
+        String author;
+        String content;
+        int likes = 0;
+        List<Comment> comments = new ArrayList<>();
+
+        Post(String author, String content) {
+            this.author = author;
+            this.content = content;
+        }
+
+        @Override
+        public String toString() {
+            return author + ": " + content + " (Likes: " + likes + ")";
+        }
+    }
+
+    class Comment {
+        String author;
+        String content;
+        int likes = 0;
+
+        Comment(String author, String content) {
+            this.author = author;
+            this.content = content;
+        }
+
+        @Override
+        public String toString() {
+            return author + ": " + content + " (Likes: " + likes + ")";
+        }
+    }
+
+    // === UI Components ===
+    private DefaultListModel<Post> postListModel = new DefaultListModel<>();
+    private JList<Post> postList = new JList<>(postListModel);
+
+    private DefaultListModel<Comment> commentListModel = new DefaultListModel<>();
+    private JList<Comment> commentList = new JList<>(commentListModel);
+
+    private JTextField postAuthorField = new JTextField(10);
+    private JTextField postContentField = new JTextField(15);
+    private JButton postButton = new JButton("Add Post");
+
+    private JTextField commentAuthorField = new JTextField(10);
+    private JTextField commentContentField = new JTextField(15);
+    private JButton commentButton = new JButton("Add Comment");
+
+    private JButton likePostButton = new JButton("Like Post");
+    private JButton likeCommentButton = new JButton("Like Comment");
+
+    // === Constructor ===
+    public MAIN() {
+        super("Simple Swing Forum");
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(800, 500);
+        setLocationRelativeTo(null); // center window
+        setLayout(new BorderLayout(10, 10));
+
+        // === Left Panel: Posts ===
+        JPanel leftPanel = new JPanel(new BorderLayout(10, 10));
+        leftPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        leftPanel.add(new JLabel("Posts"), BorderLayout.NORTH);
+        leftPanel.add(new JScrollPane(postList), BorderLayout.CENTER);
+
+        JPanel postInputPanel = new JPanel();
+        postInputPanel.add(postAuthorField);
+        postAuthorField.setToolTipText("Your name");
+        postInputPanel.add(postContentField);
+        postContentField.setToolTipText("Write a new post...");
+        postInputPanel.add(postButton);
+        leftPanel.add(postInputPanel, BorderLayout.SOUTH);
+
+        // === Right Panel: Comments ===
+        JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        rightPanel.add(new JLabel("Comments"), BorderLayout.NORTH);
+        rightPanel.add(new JScrollPane(commentList), BorderLayout.CENTER);
+
+        JPanel commentInputPanel = new JPanel();
+        commentInputPanel.add(commentAuthorField);
+        commentAuthorField.setToolTipText("Your name");
+        commentInputPanel.add(commentContentField);
+        commentContentField.setToolTipText("Write a comment...");
+        commentInputPanel.add(commentButton);
+        rightPanel.add(commentInputPanel, BorderLayout.SOUTH);
+
+        // === Bottom Panel: Like Buttons ===
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(likePostButton);
+        bottomPanel.add(likeCommentButton);
+
+        // === Add panels to frame ===
+        add(leftPanel, BorderLayout.WEST);
+        add(rightPanel, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // === Event Logic ===
+
+        // Show comments when post is selected
+        postList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                updateComments();
+            }
+        });
+
+        // Add Post
+        postButton.addActionListener(e -> {
+            String author = postAuthorField.getText().trim();
+            String content = postContentField.getText().trim();
+            if (author.isEmpty() || content.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill in both name and post!", "Missing Fields", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            postListModel.addElement(new Post(author, content));
+            postAuthorField.setText("");
+            postContentField.setText("");
+        });
+
+        // Add Comment (with validation)
+        commentButton.addActionListener(e -> {
+            Post selectedPost = postList.getSelectedValue();
+            if (selectedPost == null) {
+                JOptionPane.showMessageDialog(this, "Please select a post first!", "No Post Selected", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            String author = commentAuthorField.getText().trim();
+            String content = commentContentField.getText().trim();
+            if (author.isEmpty() || content.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill in both name and comment!", "Missing Fields", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            selectedPost.comments.add(new Comment(author, content));
+            updateComments();
+            commentAuthorField.setText("");
+            commentContentField.setText("");
+        });
+
+        // Like Post (with validation)
+        likePostButton.addActionListener(e -> {
+            Post selectedPost = postList.getSelectedValue();
+            if (selectedPost == null) {
+                JOptionPane.showMessageDialog(this, "Please select a post to like!", "No Post Selected", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            selectedPost.likes++;
+            postList.repaint();
+        });
+
+        // Like Comment (with validation)
+        likeCommentButton.addActionListener(e -> {
+            Comment selectedComment = commentList.getSelectedValue();
+            if (selectedComment == null) {
+                JOptionPane.showMessageDialog(this, "Please select a comment to like!", "No Comment Selected", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            selectedComment.likes++;
+            commentList.repaint();
+        });
+    }
+
+    // === Helper Method: Refresh comments for selected post ===
+    private void updateComments() {
+        commentListModel.clear();
+        Post selectedPost = postList.getSelectedValue();
+        if (selectedPost != null) {
+            for (Comment c : selectedPost.comments) {
+                commentListModel.addElement(c);
+            }
+        }
+    }
+
+    // === Entry Point ===
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            MAIN app = new MAIN();
+            app.setVisible(true);
+        });
+    }
+}
